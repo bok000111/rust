@@ -1,0 +1,4 @@
+[tasks.all]
+script = [
+	"echo hello"
+]
