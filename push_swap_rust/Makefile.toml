@@ -1,0 +1,20 @@
+[tasks.build]
+command = "cargo"
+args = ["build"]
+dependencies = ["clean"]
+
+[tasks.clean]
+command = "cargo"
+args = ["clean"]
+
+[tasks.run]
+command = "cargo"
+args = ["run"]
+dependencies = ["clean"]
+
+[tasks.my-flow]
+dependencies = [
+    "format",
+    "build",
+    "test"
+]

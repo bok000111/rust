@@ -1,5 +1,5 @@
 [package]
-name = "push_swap"
+name = "push_swap_rust"
 version = "0.1.0"
 edition = "2021"
 
