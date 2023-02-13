@@ -1,3 +1,5 @@
+#![deny(warnings)]
+
 use std::collections::{VecDeque};
 use std::cmp::Ordering;
 
@@ -31,9 +33,13 @@ impl FtStack {
         if size < 3 {
             FtStack::sort_small(a, size, order, cmd)
         } else {
-            FtStack::sort_push(a, b, size / 2, order.reverse(), cmd);
-            FtStack::sort(a, b, size - size / 2, order, cmd);
-            for _ in 0..(size - size / 2) {
+            FtStack::sort_push(a, b, size / 3, order, cmd);
+            for _ in 0..(size / 3) {
+                b.r(cmd);
+            }
+            FtStack::sort_push(a, b, size / 3, order.reverse(), cmd);
+            FtStack::sort(a, b, size - 2 * (size / 3), order, cmd);
+            for _ in 0..(size - 2 * (size / 3)) {
                 a.r(cmd);
             }
             FtStack::merge(b, a, size, order, cmd)
@@ -47,33 +53,79 @@ impl FtStack {
                 a.p(b, cmd);
             }
         } else {
-            FtStack::sort_push(a, b, size - size / 2, order, cmd);
-            for _ in 0..(size - size / 2) {
+            FtStack::sort_push(a, b, size - 2 * (size / 3), order, cmd);
+            for _ in 0..(size - 2 * (size / 3)) {
                 b.r(cmd);
             }
-            FtStack::sort(a, b, size / 2, order.reverse(), cmd);
+            FtStack::sort(a, b, size / 3, order, cmd);
+            for _ in 0..(size / 3) {
+                a.r(cmd);
+            }
+            FtStack::sort(a, b, size / 3, order.reverse(), cmd);
             FtStack::merge(a, b, size, order, cmd)
         }
     }
     
     fn merge(a: &mut FtStack, b: &mut FtStack, size: usize, order: Ordering, cmd: &mut VecDeque<Cmd>) {
-        let mut a_size = size / 2;
-        let mut b_size = size - size / 2;
+        let mut a_top = size / 3;
+        let mut a_bottom = size / 3;
+        let mut b_bottom = size - 2 * (size / 3);
         for _ in 0..size {
-            if a_size != 0 && b_size != 0 {
+            if a_top != 0 && a_bottom != 0 && b_bottom != 0 {
+                if a.dq.front().unwrap().cmp(&a.dq.back().unwrap()) == order {
+                    if a.dq.front().unwrap().cmp(&b.dq.back().unwrap()) == order {
+                        a.p(b, cmd);
+                        a_top -= 1;
+                    } else {
+                        b.rr(cmd);
+                        b_bottom -= 1;
+                    }       
+                } else {
+                    if a.dq.back().unwrap().cmp(&b.dq.back().unwrap()) == order {
+                        a.rr(cmd);
+                        a.p(b, cmd);
+                        a_bottom -= 1;
+                    } else {
+                        b.rr(cmd);
+                        b_bottom -= 1;
+                    } 
+                }
+            } else if a_top != 0 && a_bottom != 0 {
+                if a.dq.front().unwrap().cmp(&a.dq.back().unwrap()) == order {
+                    a.p(b, cmd);
+                    a_top -= 1;
+                } else {
+                    a.rr(cmd);
+                    a.p(b, cmd);
+                    a_bottom -= 1;   
+                }
+            } else if a_top != 0 && b_bottom != 0 {
                 if a.dq.front().unwrap().cmp(&b.dq.back().unwrap()) == order {
                     a.p(b, cmd);
-                    a_size -= 1;
+                    a_top -= 1;
                 } else {
                     b.rr(cmd);
-                    b_size -= 1;
+                    b_bottom -= 1;   
                 }
-            } else if a_size != 0 {
+            } else if a_bottom != 0 && b_bottom != 0 {
+                if a.dq.back().unwrap().cmp(&b.dq.back().unwrap()) == order {
+                    a.rr(cmd);
+                    a.p(b, cmd);
+                    a_bottom -= 1;
+                } else {
+                    b.rr(cmd);
+                    b_bottom -= 1;   
+                }
+            } else if a_top != 0 {
                 a.p(b, cmd);
-                a_size -= 1;
-            } else if b_size != 0 {
+                a_top -= 1;
+            } else if a_bottom != 0 {
+                a.rr(cmd);
+                a.p(b, cmd);
+                a_bottom -= 1;
+            } else if b_bottom != 0 {
                 b.rr(cmd);
-                b_size -= 1;
+                b_bottom -= 1;
             }
         }
     }
