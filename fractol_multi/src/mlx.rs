@@ -186,7 +186,7 @@ impl Data {
                                 (x + calc.shift_x - calc.screen_size / 2) as f64 * calc.scale,
                                 (y + calc.shift_y - calc.screen_size / 2) as f64 * calc.scale
                             )
-                        )).unwrap();
+                        )).expect("failed to send tuple");
                     }
                 }
             });

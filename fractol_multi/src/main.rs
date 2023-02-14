@@ -9,8 +9,8 @@ fn main() {
     }
     let mut data = Data::new(
         &argv[0],
-        argv[1].parse::<i32>().unwrap(),
-        argv[2].parse::<i32>().unwrap(),
+        argv[1].parse::<i32>().expect("not a number"),
+        argv[2].parse::<i32>().expect("not a number"),
         0x00ffffff,
     );
     unsafe {
