@@ -15,8 +15,7 @@ pub struct Data {
 }
 
 struct CalcData {
-    width: i64,
-    height: i64,
+    screen_size: i64,
     shift_x: i64,
     shift_y: i64,
     scale: f64,
@@ -57,8 +56,7 @@ impl Data {
                 img,
                 addr: std::ptr::null_mut(),
                 calc: CalcData {
-                    width: screen_size as i64,
-                    height: screen_size as i64,
+                    screen_size: screen_size as i64,
                     shift_x: 0,
                     shift_y: 0,
                     scale: 0.005,
@@ -103,22 +101,22 @@ impl Data {
     pub fn shift(&mut self, mode: bool, dir: bool) {
         if mode {
             if dir {
-                self.calc.shift_x += self.calc.width / 10;
+                self.calc.shift_x += self.calc.screen_size / 10;
             } else {
-                self.calc.shift_x -= self.calc.width / 10;
+                self.calc.shift_x -= self.calc.screen_size / 10;
             }
         } else {
             if dir {
-                self.calc.shift_y -= self.calc.height / 10;
+                self.calc.shift_y -= self.calc.screen_size / 10;
             } else {
-                self.calc.shift_y += self.calc.height / 10;
+                self.calc.shift_y += self.calc.screen_size / 10;
             }
         }
     }
 
     pub fn mouse(&mut self, x: i32, y: i32) {
-        self.mouse_x = x as i64 - self.calc.width / 2;
-        self.mouse_y = self.calc.height / 2 - y as i64;
+        self.mouse_x = x as i64 - self.calc.screen_size / 2;
+        self.mouse_y = self.calc.screen_size / 2 - y as i64;
     }
 
     pub fn scale(&mut self, mode: bool) {
@@ -134,11 +132,11 @@ impl Data {
     }
 
     pub fn refresh(&self) {
-        if let Ok(available_thread) = std::thread::available_parallelism() {
-            let reciever = self.multi_thread(available_thread.get() as i64 * 2 - 4);
+        if let Ok(_available_thread) = std::thread::available_parallelism() {
+            let reciever = self.multi_thread(self.calc.screen_size);
             for (x, y, color) in reciever {
                 unsafe {
-                    *self.addr.offset((x + (self.calc.height as i32 - (y + 1)) * 
+                    *self.addr.offset((x + (self.calc.screen_size as i32 - (y + 1)) * 
                     self.size_line / std::mem::size_of::<i32>() as i32) as isize) = self.calc.f64tocolor(color);
                 }
             }
@@ -157,13 +155,13 @@ impl Data {
     }
 
     fn multi_thread<'s>(&self, threads: i64) -> std::sync::mpsc::Receiver<(i32, i32, i32)> {
-        let mut remain = self.calc.width;
+        let mut remain = self.calc.screen_size;
         let block_size = remain / threads;
         let (sender, receiver) = std::sync::mpsc::channel();
         while remain != 0 {
             let start;
             let sender_thread;
-            if remain < block_size {
+            if remain <= block_size {
                 start = 0;
                 sender_thread = sender.to_owned();
             } else {
@@ -171,8 +169,7 @@ impl Data {
                 sender_thread = sender.clone();
             }
             let calc = CalcData {
-                width: self.calc.width,
-                height: self.calc.height,
+                screen_size: self.calc.screen_size,
                 shift_x: self.calc.shift_x,
                 shift_y: self.calc.shift_y,
                 scale: self.calc.scale,
@@ -181,13 +178,13 @@ impl Data {
             };
             std::thread::spawn(move || {
                 for x in start..remain {
-                    for y in 0..calc.height {
+                    for y in 0..calc.screen_size {
                         sender_thread.send((
                             x as i32,
                             y as i32,
                             calc.mandelbrot(
-                                (x + calc.shift_x - calc.width / 2) as f64 * calc.scale,
-                                (y + calc.shift_y - calc.height / 2) as f64 * calc.scale
+                                (x + calc.shift_x - calc.screen_size / 2) as f64 * calc.scale,
+                                (y + calc.shift_y - calc.screen_size / 2) as f64 * calc.scale
                             )
                         )).unwrap();
                     }
@@ -203,14 +200,14 @@ impl Data {
     }
 
     fn single_thread(&self) {
-        for x in 0..self.calc.width {
-            for y in 0..self.calc.height {
+        for x in 0..self.calc.screen_size {
+            for y in 0..self.calc.screen_size {
                 unsafe {
                     *self.addr.offset(
-                        (x + (self.calc.height - (y + 1)) * self.size_line as i64 / std::mem::size_of::<i32>() as i64) as isize
+                        (x + (self.calc.screen_size - (y + 1)) * self.size_line as i64 / std::mem::size_of::<i32>() as i64) as isize
                     ) = self.calc.f64tocolor(self.calc.mandelbrot(
-                        (x + self.calc.shift_x - self.calc.width / 2) as f64 * self.calc.scale,
-                        (y + self.calc.shift_y - self.calc.height / 2) as f64 * self.calc.scale
+                        (x + self.calc.shift_x - self.calc.screen_size / 2) as f64 * self.calc.scale,
+                        (y + self.calc.shift_y - self.calc.screen_size / 2) as f64 * self.calc.scale
                     ));
                 }
             }
